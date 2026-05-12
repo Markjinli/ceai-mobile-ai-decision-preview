@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>CEAI 移动端 AI 决策原型</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08090d;
+      --panel: #11131a;
+      --panel2: #181b24;
+      --line: rgba(255,255,255,.1);
+      --muted: #9ca3af;
+      --faint: #6b7280;
+      --text: #f7f7fb;
+      --blue: #3b82f6;
+      --blue2: #60a5fa;
+      --green: #22c55e;
+      --pink: #f472b6;
+      --amber: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif; }
+    button, input { font: inherit; }
+    button { border: 0; cursor: pointer; }
+    .stage {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-columns: minmax(0, 430px) minmax(240px, 360px);
+      gap: 28px;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(59,130,246,.22), transparent 34%),
+        radial-gradient(circle at 82% 18%, rgba(244,114,182,.12), transparent 28%),
+        linear-gradient(180deg, #08090d, #030407);
+    }
+    .phone {
+      width: min(430px, 100vw);
+      height: min(920px, 100dvh);
+      position: relative;
+      overflow: hidden;
+      border-radius: 36px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: #09090b;
+      box-shadow: 0 30px 90px rgba(0,0,0,.62), inset 0 0 0 1px rgba(255,255,255,.04);
+    }
+    .app {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% -8%, rgba(59,130,246,.16), transparent 30%),
+        #09090b;
+    }
+    .top {
+      height: 54px;
+      padding: 10px 14px;
+      padding-top: max(10px, env(safe-area-inset-top));
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      background: rgba(9,9,11,.92);
+      backdrop-filter: blur(18px);
+    }
+    .logo {
+      width: 31px;
+      height: 31px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--blue), #7c3aed);
+      box-shadow: 0 10px 24px rgba(59,130,246,.28);
+    }
+    .top-title { min-width: 0; flex: 1; }
+    .top-title b { display: block; font-size: 14px; }
+    .top-title span { display: block; margin-top: 1px; color: var(--faint); font-size: 10px; }
+    .ghost {
+      height: 34px;
+      min-width: 34px;
+      border-radius: 13px;
+      color: #d4d4d8;
+      background: rgba(255,255,255,.055);
+      border: 1px solid rgba(255,255,255,.075);
+    }
+    .board {
+      height: 25%;
+      min-height: 176px;
+      padding: 12px;
+      flex-shrink: 0;
+      border-bottom: 1px solid rgba(255,255,255,.09);
+      background: linear-gradient(180deg, rgba(59,130,246,.1), rgba(255,255,255,.018));
+    }
+    .board-inner {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid rgba(96,165,250,.22);
+      background: rgba(12,16,24,.86);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .board-head {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 11px 12px 7px;
+    }
+    .board-main { flex: 1; min-width: 0; }
+    .eyebrow { display: flex; align-items: center; gap: 6px; color: var(--blue2); font-size: 11px; font-weight: 800; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 5px rgba(34,197,94,.13); }
+    .board-title { margin-top: 5px; font-size: 17px; font-weight: 900; letter-spacing: -.04em; }
+    .board-sub { margin-top: 2px; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .expand {
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(59,130,246,.18);
+      border: 1px solid rgba(96,165,250,.32);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      padding: 3px 10px 8px;
+    }
+    .mini {
+      height: 36px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      border-radius: 11px;
+      border: 1px solid rgba(255,255,255,.08);
+      color: rgba(255,255,255,.88);
+      background: rgba(255,255,255,.05);
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .mini::after { content: ""; position: absolute; right: 4px; top: 4px; width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.25); }
+    .mini.top { border-color: rgba(96,165,250,.55); background: linear-gradient(135deg, rgba(59,130,246,.56), rgba(59,130,246,.17)); }
+    .mini.top::after { background: var(--green); }
+    .mini.saved { border-color: rgba(244,114,182,.45); background: linear-gradient(135deg, rgba(244,114,182,.42), rgba(244,114,182,.12)); }
+    .mini.saved::after { background: var(--pink); }
+    .mini.out { opacity: .35; filter: grayscale(1); }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      margin: auto 10px 10px;
+    }
+    .stat {
+      min-width: 0;
+      padding: 7px 8px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.045);
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    .stat b { display: block; font-size: 13px; }
+    .stat span { display: block; margin-top: 1px; color: var(--faint); font-size: 10px; }
+    .chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .messages { flex: 1; overflow: auto; padding: 14px 14px 112px; }
+    .msg { display: flex; gap: 9px; margin-bottom: 14px; }
+    .msg.user { justify-content: flex-end; }
+    .avatar {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      color: #bfdbfe;
+      background: rgba(59,130,246,.14);
+      border: 1px solid rgba(59,130,246,.2);
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .bubble {
+      max-width: 82%;
+      padding: 11px 12px;
+      border-radius: 18px;
+      color: #e8e8ee;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.06);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .user .bubble { color: #fff; background: linear-gradient(135deg, var(--blue), #2563eb); }
+    .chips { display: flex; gap: 7px; overflow-x: auto; margin: 4px 0 16px 37px; padding-bottom: 4px; }
+    .chip {
+      flex: 0 0 auto;
+      height: 31px;
+      padding: 0 12px;
+      border-radius: 999px;
+      color: #dbeafe;
+      background: rgba(59,130,246,.13);
+      border: 1px solid rgba(96,165,250,.22);
+      font-size: 12px;
+    }
+    .inputbar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 10px 12px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, transparent, rgba(9,9,11,.94) 20%, rgba(9,9,11,.99));
+    }
+    .input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 22px;
+      padding: 7px 7px 7px 13px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+      box-shadow: 0 14px 35px rgba(0,0,0,.32);
+    }
+    .input input { min-width: 0; flex: 1; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 13px; }
+    .send { width: 38px; height: 38px; border-radius: 16px; color: #fff; background: var(--blue); }
+    .results {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      background: #09090b;
+      transform: translateY(100%);
+      transition: transform .34s cubic-bezier(.2,.9,.2,1);
+    }
+    .results.open { transform: translateY(0); }
+    .result-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      padding-top: max(11px, env(safe-area-inset-top));
+      border-bottom: 1px solid rgba(255,255,255,.09);
+      background: rgba(9,9,11,.94);
+      backdrop-filter: blur(18px);
+    }
+    .back { width: 34px; height: 34px; border-radius: 13px; color: #fff; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); }
+    .result-title { flex: 1; min-width: 0; }
+    .result-title b { display: block; font-size: 15px; }
+    .result-title span { color: var(--faint); font-size: 11px; }
+    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 10px 12px 8px; border-bottom: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.02); }
+    .tab { height: 34px; border-radius: 999px; color: var(--muted); background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.05); font-size: 12px; }
+    .tab.active { color: #fff; background: rgba(59,130,246,.2); border-color: rgba(96,165,250,.34); }
+    .list { flex: 1; min-height: 0; overflow: auto; padding: 12px 12px 132px; }
+    .section-line { display: flex; align-items: center; justify-content: space-between; margin: 5px 2px 10px; }
+    .section-line h2 { margin: 0; font-size: 14px; }
+    .section-line span { color: var(--faint); font-size: 11px; }
+    .card {
+      margin-bottom: 11px;
+      padding: 13px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.035));
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 18px 35px rgba(0,0,0,.18);
+    }
+    .card-main { display: flex; gap: 11px; }
+    .thumb { width: 68px; height: 58px; border-radius: 18px; flex-shrink: 0; position: relative; background: radial-gradient(circle at 30% 18%, rgba(96,165,250,.34), transparent 46%), linear-gradient(145deg, rgba(255,255,255,.16), rgba(255,255,255,.04)); border: 1px solid rgba(255,255,255,.1); }
+    .thumb::before { content: ""; position: absolute; left: 13px; right: 13px; top: 15px; height: 26px; border-radius: 5px; background: rgba(4,8,16,.75); border: 1px solid rgba(255,255,255,.14); }
+    .thumb::after { content: ""; position: absolute; left: 18px; right: 18px; bottom: 11px; height: 4px; border-radius: 999px; background: rgba(255,255,255,.34); }
+    .info { min-width: 0; flex: 1; }
+    .row { display: flex; gap: 8px; align-items: flex-start; }
+    .name { margin: 0; flex: 1; min-width: 0; font-size: 14px; line-height: 1.28; font-weight: 900; }
+    .heart { width: 32px; height: 32px; border-radius: 13px; color: var(--muted); background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.07); }
+    .heart.active { color: #fff; background: rgba(244,114,182,.18); border-color: rgba(244,114,182,.34); }
+    .price { margin-top: 5px; color: #fed7aa; font-size: 15px; font-weight: 900; }
+    .spec { margin-top: 2px; color: var(--muted); font-size: 11px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .tag { padding: 3px 7px; border-radius: 999px; color: #dbeafe; background: rgba(59,130,246,.12); border: 1px solid rgba(96,165,250,.18); font-size: 10px; }
+    .tag.warn { color: #fde68a; background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.18); }
+    .actions { display: grid; grid-template-columns: 1fr 1.15fr; gap: 8px; margin-top: 12px; }
+    .secondary, .primary { height: 36px; border-radius: 15px; font-size: 12px; font-weight: 900; }
+    .secondary { color: #d4d4d8; background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.08); }
+    .primary { color: #fff; background: linear-gradient(135deg, var(--blue), #2563eb); }
+    .primary.in { color: #bbf7d0; background: rgba(34,197,94,.16); border: 1px solid rgba(34,197,94,.3); }
+    .dock {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      padding: 11px;
+      border-radius: 22px;
+      background: rgba(16,16,20,.94);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 18px 42px rgba(0,0,0,.46);
+      backdrop-filter: blur(18px);
+    }
+    .dock-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 9px; }
+    .dock-head b { display: block; font-size: 13px; }
+    .dock-head span { color: var(--faint); font-size: 11px; }
+    .finals { display: flex; gap: 6px; overflow: hidden; }
+    .final { padding: 5px 8px; border-radius: 999px; color: #bfdbfe; background: rgba(59,130,246,.12); border: 1px solid rgba(96,165,250,.18); font-size: 11px; }
+    .compare { width: 100%; height: 38px; margin-top: 9px; border-radius: 16px; color: #07111f; background: linear-gradient(135deg, #93c5fd, #60a5fa); font-weight: 950; }
+    .diff { display: none; margin-top: 12px; padding: 11px; border-radius: 18px; background: rgba(59,130,246,.09); border: 1px solid rgba(96,165,250,.18); }
+    .diff.open { display: block; }
+    .diff-row { display: grid; grid-template-columns: 62px 1fr; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.06); font-size: 11px; }
+    .diff-row:last-child { border-bottom: 0; }
+    .diff-row b { color: #bfdbfe; }
+    .toast { position: absolute; left: 50%; bottom: 92px; z-index: 30; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; padding: 9px 12px; border-radius: 999px; color: #fff; background: rgba(24,24,27,.94); border: 1px solid rgba(255,255,255,.1); font-size: 12px; transition: opacity .22s ease, transform .22s ease; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .note { max-width: 340px; color: #d4d4d8; }
+    .note h1 { margin: 0 0 14px; font-size: 28px; line-height: 1.1; letter-spacing: -.05em; }
+    .note p { margin: 0 0 12px; color: var(--muted); line-height: 1.75; font-size: 14px; }
+    .note code { color: #bfdbfe; }
+    @media (max-width: 760px) {
+      .stage { display: block; padding: 0; }
+      .phone { width: 100vw; height: 100dvh; border: 0; border-radius: 0; }
+      .note { display: none; }
+    }
+    @media (max-height: 720px) {
+      .board { min-height: 150px; }
+      .mini { height: 30px; border-radius: 9px; }
+      .stats { display: none; }
+      .board-title { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <section class="phone" aria-label="CEAI 移动端 AI 决策原型">
+      <div class="app">
+        <header class="top">
+          <div class="logo">C</div>
+          <div class="top-title">
+            <b>CEAI 选机助手</b>
+            <span>快速筛选 · 少聊天 · 直接给结论</span>
+          </div>
+          <button class="ghost" aria-label="历史">☰</button>
+        </header>
+
+        <section class="board">
+          <div class="board-inner">
+            <div class="board-head">
+              <div class="board-main">
+                <div class="eyebrow"><span class="dot"></span>候选看板</div>
+                <div class="board-title">已从 180 台筛到 24 台</div>
+                <div class="board-sub">首选 3 台，备选 8 台，已排除 156 台</div>
+              </div>
+              <button class="expand" id="openResults">全屏</button>
+            </div>
+            <div class="mini-grid" aria-hidden="true">
+              <div class="mini top">A</div>
+              <div class="mini top">B</div>
+              <div class="mini top">C</div>
+              <div class="mini saved">D</div>
+              <div class="mini">E</div>
+              <div class="mini">F</div>
+              <div class="mini out">156</div>
+            </div>
+            <div class="stats">
+              <div class="stat"><b>首选 3</b><span>直接可买</span></div>
+              <div class="stat"><b>收藏 2</b><span>先留着</span></div>
+              <div class="stat"><b>决赛圈 1</b><span>再选 1 台</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="chat">
+          <div class="messages">
+            <div class="msg user"><div class="bubble">预算 7000 左右，大学生，写代码，偶尔打游戏，希望别太重。</div></div>
+            <div class="msg"><div class="avatar">AI</div><div class="bubble">我先按预算、编程、多带出门和轻度游戏筛了一轮。现在最值得看的不是很多，右上看板已经缩到 24 台。</div></div>
+            <div class="msg"><div class="avatar">AI</div><div class="bubble">初步结论：优先看 A；如果更在意重量，就看 B；如果想多玩游戏，C 更稳但会重一些。</div></div>
+            <div class="chips">
+              <button class="chip">更便宜</button>
+              <button class="chip">更轻薄</button>
+              <button class="chip">性能更强</button>
+              <button class="chip">避坑优先</button>
+            </div>
+            <div class="msg user"><div class="bubble">我更怕买重了，宿舍和图书馆要经常背。</div></div>
+            <div class="msg"><div class="avatar">AI</div><div class="bubble">那我会把 1.6kg 以上的机型降权。你可以点上方“全屏”，先把 B、D 这类轻薄候选收藏，再挑 2 台进决赛看关键差异。</div></div>
+          </div>
+        </section>
+
+        <div class="inputbar">
+          <div class="input">
+            <input placeholder="补充你的偏好，比如：更轻薄 / 不要 OLED" />
+            <button class="send" aria-label="发送">↗</button>
+          </div>
+        </div>
+
+        <section class="results" id="resultsPage">
+          <header class="result-head">
+            <button class="back" id="closeResults" aria-label="返回">‹</button>
+            <div class="result-title">
+              <b>推荐结果 24 台</b>
+              <span>按“轻薄 + 编程 + 轻度游戏”重新排序</span>
+            </div>
+          </header>
+          <nav class="tabs">
+            <button class="tab active">首选 3</button>
+            <button class="tab">备选 8</button>
+            <button class="tab">收藏 <span id="savedCount">2</span></button>
+            <button class="tab">决赛圈 <span id="finalCount">1</span></button>
+          </nav>
+          <div class="list">
+            <div class="section-line"><h2>首选推荐</h2><span>先看这 3 台就够了</span></div>
+            <article class="card" data-name="A 小新">
+              <div class="card-main">
+                <div class="thumb"></div>
+                <div class="info">
+                  <div class="row"><h3 class="name">A 小新 Pro 16 GT</h3><button class="heart active" data-heart>♥</button></div>
+                  <div class="price">¥6,899</div>
+                  <div class="spec">1.72kg · RTX 4050 · 32GB · 2.8K 高刷屏</div>
+                </div>
+              </div>
+              <div class="tags"><span class="tag">编程很稳</span><span class="tag">轻度游戏够用</span><span class="tag warn">满载噪音略高</span></div>
+              <div class="actions"><button class="secondary">详情</button><button class="primary in" data-final>已进决赛</button></div>
+            </article>
+            <article class="card" data-name="B 灵耀">
+              <div class="card-main">
+                <div class="thumb"></div>
+                <div class="info">
+                  <div class="row"><h3 class="name">B 灵耀 14 Air</h3><button class="heart" data-heart>♡</button></div>
+                  <div class="price">¥7,299</div>
+                  <div class="spec">1.28kg · OLED · 24GB · 长续航</div>
+                </div>
+              </div>
+              <div class="tags"><span class="tag">最适合背出门</span><span class="tag">屏幕观感好</span><span class="tag warn">游戏性能一般</span></div>
+              <div class="actions"><button class="secondary">详情</button><button class="primary" data-final>进决赛</button></div>
+            </article>
+            <article class="card" data-name="C 拯救者">
+              <div class="card-main">
+                <div class="thumb"></div>
+                <div class="info">
+                  <div class="row"><h3 class="name">C 拯救者 Slim</h3><button class="heart active" data-heart>♥</button></div>
+                  <div class="price">¥7,699</div>
+                  <div class="spec">1.95kg · RTX 4060 · 32GB · 性能释放强</div>
+                </div>
+              </div>
+              <div class="tags"><span class="tag">性能上限最高</span><span class="tag">游戏更稳</span><span class="tag warn">每天背会累</span></div>
+              <div class="actions"><button class="secondary">详情</button><button class="primary" data-final>进决赛</button></div>
+            </article>
+            <div class="section-line" style="margin-top:18px"><h2>备选方向</h2><span>需要时再展开</span></div>
+            <article class="card" data-name="D MateBook">
+              <div class="card-main">
+                <div class="thumb"></div>
+                <div class="info">
+                  <div class="row"><h3 class="name">D MateBook 14 Pro</h3><button class="heart" data-heart>♡</button></div>
+                  <div class="price">¥6,499</div>
+                  <div class="spec">1.35kg · 核显 · 触控屏 · 办公体验好</div>
+                </div>
+              </div>
+              <div class="tags"><span class="tag">轻薄办公</span><span class="tag warn">不适合重度游戏</span></div>
+              <div class="actions"><button class="secondary">详情</button><button class="primary" data-final>进决赛</button></div>
+            </article>
+          </div>
+
+          <aside class="dock">
+            <div class="dock-head">
+              <div><b>决赛圈 <span id="dockFinalCount">1</span>/4</b><span>选 2-4 台看关键差异</span></div>
+              <div class="finals" id="finals"><span class="final">A 小新</span></div>
+            </div>
+            <button class="compare" id="compareBtn">再选 1 台开始对比</button>
+            <div class="diff" id="diffPanel">
+              <div class="diff-row"><b>结论</b><span>A 更均衡，B 更轻，C 性能最强但偏重。</span></div>
+              <div class="diff-row"><b>重量</b><span>B 约 1.28kg，最适合图书馆/通勤。</span></div>
+              <div class="diff-row"><b>性能</b><span>C 游戏更稳；A 编程和轻度游戏更均衡。</span></div>
+              <div class="diff-row"><b>风险</b><span>C 每天背负压力大；B 游戏性能上限一般。</span></div>
+            </div>
+          </aside>
+        </section>
+        <div class="toast" id="toast">已更新</div>
+      </div>
+    </section>
+
+    <aside class="note">
+      <h1>CEAI 移动端 AI 决策原型</h1>
+      <p>这版验证：手机上方 25% 常驻候选看板，下方保持 AI 对话；点 <code>全屏</code> 进入结果页，再完成收藏、进决赛和关键差异对比。</p>
+      <p>在手机上打开会自动铺满屏幕。可点击：<code>全屏</code>、<code>收藏</code>、<code>进决赛</code>、<code>查看关键差异</code>。</p>
+    </aside>
+  </main>
+
+  <script>
+    const results = document.getElementById('resultsPage')
+    const openResults = document.getElementById('openResults')
+    const closeResults = document.getElementById('closeResults')
+    const compareBtn = document.getElementById('compareBtn')
+    const diffPanel = document.getElementById('diffPanel')
+    const toast = document.getElementById('toast')
+    const savedCount = document.getElementById('savedCount')
+    const finalCount = document.getElementById('finalCount')
+    const dockFinalCount = document.getElementById('dockFinalCount')
+    const finals = document.getElementById('finals')
+    const finalSet = new Set(['A 小新'])
+    let toastTimer
+
+    function showToast(text) {
+      toast.textContent = text
+      toast.classList.add('show')
+      clearTimeout(toastTimer)
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 900)
+    }
+
+    function renderFinals() {
+      finals.innerHTML = ''
+      finalSet.forEach(name => {
+        const el = document.createElement('span')
+        el.className = 'final'
+        el.textContent = name
+        finals.appendChild(el)
+      })
+      finalCount.textContent = String(finalSet.size)
+      dockFinalCount.textContent = String(finalSet.size)
+      compareBtn.textContent = finalSet.size >= 2 ? '查看关键差异' : '再选 1 台开始对比'
+      if (finalSet.size < 2) diffPanel.classList.remove('open')
+    }
+
+    openResults.addEventListener('click', () => results.classList.add('open'))
+    closeResults.addEventListener('click', () => results.classList.remove('open'))
+
+    document.querySelectorAll('[data-heart]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const active = btn.classList.toggle('active')
+        btn.textContent = active ? '♥' : '♡'
+        const current = Number(savedCount.textContent || '0')
+        savedCount.textContent = String(Math.max(0, current + (active ? 1 : -1)))
+        showToast(active ? '已加入收藏候选' : '已取消收藏')
+      })
+    })
+
+    document.querySelectorAll('[data-final]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const card = btn.closest('.card')
+        const name = card?.dataset.name || '候选机型'
+        const nowIn = btn.classList.toggle('in')
+        if (nowIn) {
+          if (finalSet.size >= 4) {
+            btn.classList.remove('in')
+            showToast('决赛圈最多 4 台')
+            return
+          }
+          btn.textContent = '已进决赛'
+          finalSet.add(name)
+          showToast('已加入决赛圈')
+        } else {
+          btn.textContent = '进决赛'
+          finalSet.delete(name)
+          showToast('已移出决赛圈')
+        }
+        renderFinals()
+      })
+    })
+
+    compareBtn.addEventListener('click', () => {
+      if (finalSet.size < 2) {
+        showToast('至少选择 2 台进入决赛圈')
+        return
+      }
+      diffPanel.classList.toggle('open')
+      compareBtn.textContent = diffPanel.classList.contains('open') ? '收起关键差异' : '查看关键差异'
+    })
+
+    renderFinals()
+  </script>
+</body>
+</html>
